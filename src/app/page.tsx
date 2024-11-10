@@ -24,6 +24,8 @@ interface ClassInfo {
   isLab: boolean;
 }
 
+const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
 export default function Component() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [scheduleTitle, setScheduleTitle] = useState("CLASS SCHEDULE");
@@ -40,124 +42,124 @@ export default function Component() {
     return `${hour}:00`;
   });
 
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-
   useEffect(() => {
-    drawSchedule();
-  }, [scheduleTitle, section, classes]);
+    const drawSchedule = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-  const drawSchedule = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      // Set canvas size
+      canvas.width = 1200;
+      canvas.height = 800;
 
-    // Set canvas size
-    canvas.width = 1200;
-    canvas.height = 800;
+      // Draw background
+      ctx.fillStyle = "#2d2d2d";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw background
-    ctx.fillStyle = "#2d2d2d";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Draw header
+      ctx.fillStyle = "#ffffff";
+      // ctx.fillRect(0, 0, canvas.width, 60);
+      // ctx.fillStyle = "#000000";
+      ctx.font = "bold 32px Arial";
+      const titleText = scheduleTitle;
+      const titleWidth = ctx.measureText(titleText).width;
+      ctx.fillText(titleText, (canvas.width - titleWidth) / 2, 50);
 
-    // Draw header
-    ctx.fillStyle = "#ffffff";
-    // ctx.fillRect(0, 0, canvas.width, 60);
-    // ctx.fillStyle = "#000000";
-    ctx.font = "bold 32px Arial";
-    const titleText = scheduleTitle;
-    const titleWidth = ctx.measureText(titleText).width;
-    ctx.fillText(titleText, (canvas.width - titleWidth) / 2, 50);
-
-    // Draw section info
-    const sectionWidth = 200;
-    ctx.fillStyle = "#98fb98";
-    ctx.beginPath();
-    ctx.roundRect(150, 20, sectionWidth, 40, 8);
-    ctx.fill();
-    ctx.fillStyle = "#000000";
-    ctx.font = "16px Arial";
-    ctx.fillText(`Section: ${section || "Not Set"}`, 160, 45);
-
-    // Draw grid
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 1;
-
-    // Draw time column
-    let startY = 140;
-    ctx.fillStyle = "#b0e0e6";
-    timeSlots.forEach((time, i) => {
+      // Draw section info
+      const sectionWidth = 200;
+      ctx.fillStyle = "#98fb98";
       ctx.beginPath();
-      ctx.roundRect(65, startY + i * 70 + 10, 150, 50, 8);
+      ctx.roundRect(150, 20, sectionWidth, 40, 8);
       ctx.fill();
-      ctx.fillStyle = "#000000";
-      ctx.font = "14px Arial";
-      ctx.fillText(time, 75, startY + 30 + i * 70);
-      ctx.fillStyle = "#b0e0e6";
-    });
-
-    // Draw day headers
-    let startX = 240;
-    ctx.fillStyle = "#ffa07a";
-    days.forEach((day, i) => {
-      ctx.beginPath();
-      ctx.roundRect(startX + i * 180, startY - 50, 160, 40, 8);
-      ctx.fill();
-      ctx.fillStyle = "#000000";
-      ctx.font = "bold 16px Arial";
-      const dayWidth = ctx.measureText(day).width;
-      ctx.fillText(day, startX + (160 - dayWidth) / 2 + i * 180, startY - 25);
-      ctx.fillStyle = "#ffa07a";
-    });
-
-    // Draw grid lines
-    for (let i = 0; i <= timeSlots.length; i++) {
-      ctx.beginPath();
-      ctx.moveTo(50, startY + i * 70);
-      ctx.lineTo(1150, startY + i * 70);
-      ctx.stroke();
-    }
-
-    for (let i = 0; i <= days.length + 1; i++) {
-      ctx.beginPath();
-      ctx.moveTo(50 + i * 180, startY - 50);
-      ctx.lineTo(50 + i * 180, startY + timeSlots.length * 70);
-      ctx.stroke();
-    }
-    classes.forEach((classInfo) => {
-      const dayIndex = days.indexOf(classInfo.day);
-      const timeIndex = timeSlots.findIndex((time) => time === classInfo.time);
-      const durationHours = parseInt(classInfo.duration);
-
-      if (dayIndex === -1 || timeIndex === -1) return;
-
-      ctx.fillStyle = classInfo.isLab ? "#ff9999" : "#98fb98";
-      ctx.beginPath();
-      ctx.roundRect(
-        240 + dayIndex * 180,
-        150 + timeIndex * 70,
-        160,
-        50 * durationHours + (durationHours - 1) * 20,
-        8
-      );
-      ctx.fill();
-
       ctx.fillStyle = "#000000";
       ctx.font = "16px Arial";
-      const text = `${classInfo.name}${classInfo.isLab ? " (Lab)" : ""}`;
-      const textWidth = ctx.measureText(text).width;
-      ctx.fillText(
-        text,
-        240 + dayIndex * 180 + (160 - textWidth) / 2,
-        150 + timeIndex * 70 + 25
-      );
-      console.log({
-        x: 240 + dayIndex * 180 + (160 - textWidth) / 2,
-        y: 150 + timeIndex * 70 + 25,
+      ctx.fillText(`Section: ${section || "Not Set"}`, 160, 45);
+
+      // Draw grid
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1;
+
+      // Draw time column
+      const startY = 140;
+      ctx.fillStyle = "#b0e0e6";
+      timeSlots.forEach((time, i) => {
+        ctx.beginPath();
+        ctx.roundRect(65, startY + i * 70 + 10, 150, 50, 8);
+        ctx.fill();
+        ctx.fillStyle = "#000000";
+        ctx.font = "14px Arial";
+        ctx.fillText(time, 75, startY + 30 + i * 70);
+        ctx.fillStyle = "#b0e0e6";
       });
-    });
-  };
+
+      // Draw day headers
+      const startX = 240;
+      ctx.fillStyle = "#ffa07a";
+      days.forEach((day, i) => {
+        ctx.beginPath();
+        ctx.roundRect(startX + i * 180, startY - 50, 160, 40, 8);
+        ctx.fill();
+        ctx.fillStyle = "#000000";
+        ctx.font = "bold 16px Arial";
+        const dayWidth = ctx.measureText(day).width;
+        ctx.fillText(day, startX + (160 - dayWidth) / 2 + i * 180, startY - 25);
+        ctx.fillStyle = "#ffa07a";
+      });
+
+      // Draw grid lines
+      for (let i = 0; i <= timeSlots.length; i++) {
+        ctx.beginPath();
+        ctx.moveTo(50, startY + i * 70);
+        ctx.lineTo(1150, startY + i * 70);
+        ctx.stroke();
+      }
+
+      for (let i = 0; i <= days.length + 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(50 + i * 180, startY - 50);
+        ctx.lineTo(50 + i * 180, startY + timeSlots.length * 70);
+        ctx.stroke();
+      }
+      classes.forEach((classInfo) => {
+        const dayIndex = days.indexOf(classInfo.day);
+        const timeIndex = timeSlots.findIndex(
+          (time) => time === classInfo.time
+        );
+        const durationHours = parseInt(classInfo.duration);
+
+        if (dayIndex === -1 || timeIndex === -1) return;
+
+        ctx.fillStyle = classInfo.isLab ? "#ff9999" : "#98fb98";
+        ctx.beginPath();
+        ctx.roundRect(
+          240 + dayIndex * 180,
+          150 + timeIndex * 70,
+          160,
+          50 * durationHours + (durationHours - 1) * 20,
+          8
+        );
+        ctx.fill();
+
+        ctx.fillStyle = "#000000";
+        ctx.font = "16px Arial";
+        const text = `${classInfo.name}${classInfo.isLab ? " (Lab)" : ""}`;
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillText(
+          text,
+          240 + dayIndex * 180 + (160 - textWidth) / 2,
+          150 + timeIndex * 70 + 25
+        );
+        console.log({
+          x: 240 + dayIndex * 180 + (160 - textWidth) / 2,
+          y: 150 + timeIndex * 70 + 25,
+        });
+      });
+    };
+
+    drawSchedule();
+  }, [scheduleTitle, section, classes, timeSlots]);
 
   const addClass = () => {
     if (!className || !selectedDay || !selectedTime) return;
