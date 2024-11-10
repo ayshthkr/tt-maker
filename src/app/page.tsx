@@ -1,101 +1,315 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useRef, useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { X } from "lucide-react";
+
+interface ClassInfo {
+  id: string;
+  name: string;
+  day: string;
+  time: string;
+  duration: string;
+  isLab: boolean;
+}
+
+export default function Component() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [scheduleTitle, setScheduleTitle] = useState("CLASS SCHEDULE");
+  const [className, setClassName] = useState("");
+  const [section, setSection] = useState("");
+  const [selectedDay, setSelectedDay] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [duration, setDuration] = useState("1");
+  const [isLab, setIsLab] = useState(false);
+  const [classes, setClasses] = useState<ClassInfo[]>([]);
+
+  const timeSlots = Array.from({ length: 9 }, (_, i) => {
+    const hour = i + 10;
+    return `${hour}:00`;
+  });
+
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+  useEffect(() => {
+    drawSchedule();
+  }, [scheduleTitle, section, classes]);
+
+  const drawSchedule = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Set canvas size
+    canvas.width = 1200;
+    canvas.height = 800;
+
+    // Draw background
+    ctx.fillStyle = "#2d2d2d";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw header
+    ctx.fillStyle = "#ffffff";
+    // ctx.fillRect(0, 0, canvas.width, 60);
+    // ctx.fillStyle = "#000000";
+    ctx.font = "bold 32px Arial";
+    const titleText = scheduleTitle;
+    const titleWidth = ctx.measureText(titleText).width;
+    ctx.fillText(titleText, (canvas.width - titleWidth) / 2, 50);
+
+    // Draw section info
+    const sectionWidth = 200;
+    ctx.fillStyle = "#98fb98";
+    ctx.beginPath();
+    ctx.roundRect(150, 20, sectionWidth, 40, 8);
+    ctx.fill();
+    ctx.fillStyle = "#000000";
+    ctx.font = "16px Arial";
+    ctx.fillText(`Section: ${section || "Not Set"}`, 160, 45);
+
+    // Draw grid
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1;
+
+    // Draw time column
+    let startY = 140;
+    ctx.fillStyle = "#b0e0e6";
+    timeSlots.forEach((time, i) => {
+      ctx.beginPath();
+      ctx.roundRect(65, startY + i * 70 + 10, 150, 50, 8);
+      ctx.fill();
+      ctx.fillStyle = "#000000";
+      ctx.font = "14px Arial";
+      ctx.fillText(time, 75, startY + 30 + i * 70);
+      ctx.fillStyle = "#b0e0e6";
+    });
+
+    // Draw day headers
+    let startX = 240;
+    ctx.fillStyle = "#ffa07a";
+    days.forEach((day, i) => {
+      ctx.beginPath();
+      ctx.roundRect(startX + i * 180, startY - 50, 160, 40, 8);
+      ctx.fill();
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 16px Arial";
+      const dayWidth = ctx.measureText(day).width;
+      ctx.fillText(day, startX + (160 - dayWidth) / 2 + i * 180, startY - 25);
+      ctx.fillStyle = "#ffa07a";
+    });
+
+    // Draw grid lines
+    for (let i = 0; i <= timeSlots.length; i++) {
+      ctx.beginPath();
+      ctx.moveTo(50, startY + i * 70);
+      ctx.lineTo(1150, startY + i * 70);
+      ctx.stroke();
+    }
+
+    for (let i = 0; i <= days.length + 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(50 + i * 180, startY - 50);
+      ctx.lineTo(50 + i * 180, startY + timeSlots.length * 70);
+      ctx.stroke();
+    }
+    classes.forEach((classInfo) => {
+      const dayIndex = days.indexOf(classInfo.day);
+      const timeIndex = timeSlots.findIndex((time) => time === classInfo.time);
+      const durationHours = parseInt(classInfo.duration);
+
+      if (dayIndex === -1 || timeIndex === -1) return;
+
+      ctx.fillStyle = classInfo.isLab ? "#ff9999" : "#98fb98";
+      ctx.beginPath();
+      ctx.roundRect(
+        240 + dayIndex * 180,
+        150 + timeIndex * 70,
+        160,
+        50 * durationHours + (durationHours - 1) * 20,
+        8
+      );
+      ctx.fill();
+
+      ctx.fillStyle = "#000000";
+      ctx.font = "16px Arial";
+      const text = `${classInfo.name}${classInfo.isLab ? " (Lab)" : ""}`;
+      const textWidth = ctx.measureText(text).width;
+      ctx.fillText(
+        text,
+        240 + dayIndex * 180 + (160 - textWidth) / 2,
+        150 + timeIndex * 70 + 25
+      );
+      console.log({
+        x: 240 + dayIndex * 180 + (160 - textWidth) / 2,
+        y: 150 + timeIndex * 70 + 25,
+      });
+    });
+  };
+
+  const addClass = () => {
+    if (!className || !selectedDay || !selectedTime) return;
+
+    const newClass: ClassInfo = {
+      id: Date.now().toString(),
+      name: className,
+      day: selectedDay,
+      time: selectedTime,
+      duration: duration,
+      isLab: isLab,
+    };
+
+    setClasses([...classes, newClass]);
+    setClassName("");
+    setSelectedDay("");
+    setSelectedTime("");
+    setDuration("1");
+    setIsLab(false);
+  };
+
+  const removeClass = (id: string) => {
+    setClasses(classes.filter((c) => c.id !== id));
+  };
+
+  const exportToPNG = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const link = document.createElement("a");
+    link.download = "class-schedule.png";
+    link.href = canvas.toDataURL();
+    link.click();
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="p-6 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2 space-y-2">
+          <Label htmlFor="scheduleTitle">Schedule Title</Label>
+          <Input
+            id="scheduleTitle"
+            value={scheduleTitle}
+            onChange={(e) => setScheduleTitle(e.target.value)}
+            placeholder="Enter schedule title"
+            maxLength={50}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        <div className="md:col-span-2 space-y-2">
+          <Label htmlFor="section">Section</Label>
+          <Input
+            id="section"
+            value={section}
+            onChange={(e) => setSection(e.target.value)}
+            placeholder="Enter section"
+            maxLength={20}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+        </div>
+        <div className="md:col-span-2 my-4 h-px bg-border" />
+        <div className="space-y-2">
+          <Label htmlFor="className">Class Name</Label>
+          <Input
+            id="className"
+            value={className}
+            onChange={(e) => setClassName(e.target.value)}
+            placeholder="Enter class name"
+            maxLength={30}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="day">Day</Label>
+          <Select onValueChange={setSelectedDay} value={selectedDay}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select day" />
+            </SelectTrigger>
+            <SelectContent>
+              {days.map((day) => (
+                <SelectItem key={day} value={day}>
+                  {day}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="time">Start Time</Label>
+          <Select onValueChange={setSelectedTime} value={selectedTime}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select time" />
+            </SelectTrigger>
+            <SelectContent>
+              {timeSlots.map((time) => (
+                <SelectItem key={time} value={time}>
+                  {time}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="duration">Duration (hours)</Label>
+          <Select onValueChange={setDuration} value={duration}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select duration" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1 hour</SelectItem>
+              <SelectItem value="2">2 hours</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Switch id="isLab" checked={isLab} onCheckedChange={setIsLab} />
+          <Label htmlFor="isLab">Is Lab Session</Label>
+        </div>
+        <div className="md:col-span-2 flex flex-row gap-4">
+          <Button onClick={addClass}>Add Class</Button>
+          <Button variant="outline" onClick={exportToPNG}>
+            Export to PNG
+          </Button>
+        </div>
+      </div>
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="w-full md:w-3/4">
+          <canvas ref={canvasRef} className="w-full h-auto border rounded-lg" />
+        </div>
+        <div className="w-full md:w-1/4 space-y-4">
+          <h3 className="text-lg font-semibold">Added Classes</h3>
+          {classes.map((classInfo) => (
+            <Card key={classInfo.id}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {classInfo.name}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeClass(classInfo.id)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
+                  {classInfo.day}, {classInfo.time}, {classInfo.duration}h
+                  {classInfo.isLab ? " (Lab)" : ""}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
